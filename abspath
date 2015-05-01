@@ -1,0 +1,11 @@
+#!/usr/bin/python
+# vim:set ts=4 sw=4 ai et smarttab:
+
+import os
+import sys
+
+if len(sys.argv) < 2:
+    sys.argv.append(".")
+
+for i in sys.argv[1:]:
+    print os.path.abspath(i)

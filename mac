@@ -1,0 +1,106 @@
+#!/bin/bash
+# vim:set ts=4 sw=4 ai:
+#
+# Copyright (c) 2004 Michael C. Toren <mct@toren.net>
+#
+# mct, Tue Jun 29 13:08:09 EDT 2004
+# mct, Fri Jul 23 23:51:31 EDT 2004
+#
+# Looks up an ethernet MAC address in a (locally cached) IEEE OUI file,
+# and prints the company the address was assigned to.  For example:
+#
+#       $ mac 44:1e:a1:1e:2a:3f
+#         44-1E-A1   (hex)              Hewlett-Packard Company
+#         441EA1     (base 16)          Hewlett-Packard Company
+#                                       11445 Compaq Center Drive
+#                                       Houston Texas 77070
+#                                       UNITED STATES
+#
+# Running "mac -u" updates the OUI file.
+#
+# Requires:
+#	- bash 2.0
+# 	- wget, or lynx
+#	- gzip
+
+FILE=~/.oui.gz
+TMP=~/.oui.tmp
+URL=http://standards.ieee.org/regauth/oui/oui.txt
+ME=$(basename $0)
+
+set -e
+
+usage()
+{
+	echo "Usage: $ME -u " >&2
+	echo "       $ME <MAC> " >&2
+	exit -1
+}
+
+while getopts ":u" flag
+do
+	case $flag in
+		\?)
+			usage
+			;;
+
+		u)
+			trap "rm -f $TMP" EXIT
+
+			if wget --version &>/dev/null
+				then (set -x; wget -q -O $TMP $URL)
+
+			elif lynx --version &>/dev/null
+				then (set -x; lynx -source $URL > $TMP)
+
+			## No support for curl yet, as "curl --help" returns as error code,
+			## therefore making it's presense hard to auto-detect in a shell
+			## script.
+			#
+			#elif curl --help &>/dev/null
+			#	then (set -x; curl -sSf $URL > $TMP)
+
+			else
+				echo "Error: No suitable download program (e.g., wget, lynx) found?" >&2
+				exit -1
+			fi
+
+			if [ $(wc -c < $TMP) -lt $((500 * 1024)) ]
+			then
+				echo "Error: Downloaded $URL file less than 500k?" >&2
+				exit -1
+			fi
+
+			gzip -c < $TMP > $FILE
+			chmod 644 $FILE
+			exit
+			;;
+	esac
+done
+
+shift $((OPTIND - 1))
+
+if [ -z "$*" ]
+then usage
+fi
+
+PAT=$1
+PAT=${PAT//:/}	# remove :'s
+PAT=${PAT//-/}	# remove -'s
+PAT=${PAT//./}	# remove .'s
+PAT=${PAT:0:6}	# first six hex bytes only
+
+if ! echo "$PAT" | grep -iq '^[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F]$'
+then
+	echo "Error: Invalid MAC pattern" >&2
+	exit -1
+fi
+
+if ! [ -f $FILE ]
+then
+	echo "Error: OUI database $FILE not found?" >&2
+	echo "       Perhaps you need to run $ME -u" >&2
+	exit -1
+fi
+
+gunzip -c < $FILE | grep -i -B1 -A20 -- "^$PAT" | awk '/^[ \t]*$/ {exit} {print}'

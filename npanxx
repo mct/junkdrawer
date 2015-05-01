@@ -1,0 +1,75 @@
+#!/usr/bin/python
+# $Id: phone.py 586 2008-01-25 17:46:08Z mct $
+# vim:set sw=4 ts=4 ai:
+
+'''
+
+Looks up a telephone number's NPANXX from localcallingguide.com, and prints
+some of the more interesting information, such as which telco the prefix was
+originally assigned.  For example:
+
+$ npanxx 415-491-0130
+>>> Looking up 415-491 at http://www.localcallingguide.com/xmlprefix.php?npa=415&nxx=491
+             RC: San Rafael
+         Region: CA
+         Switch: SNRFCA11DS0
+   Company-Name: PACIFIC BELL
+
+'''
+
+import sys
+import urllib
+import libxml2
+import re
+
+baseurl = "http://www.localcallingguide.com/xmlprefix.php"
+
+def parsenumber(s):
+	digits = re.findall("(\d)", s)
+	if digits[0] == '1':
+		digits.pop(0)
+	return [ "".join(digits[0:3]), "".join(digits[3:6]) ]
+
+def lookup(npa, nxx):
+	url = "%s?npa=%s&nxx=%s" % (baseurl, npa, nxx)
+	print ">>> Looking up %s-%s at %s" % (npa, nxx, url)
+	data = urllib.urlopen(url).read()
+	x = libxml2.parseMemory(data, len(data))
+
+	list = [
+			x.xpathEval('//root/prefixdata/npa'),
+			x.xpathEval('//root/prefixdata/nxx'),
+			x.xpathEval('//root/prefixdata/company-name'),
+			x.xpathEval('//root/prefixdata/ilec-name'),
+			x.xpathEval('//root/prefixdata/rc'),
+			x.xpathEval('//root/prefixdata/region'),
+			x.xpathEval('//root/prefixdata/switch')
+		];
+
+	# 'list' contains a list of one-element lists. raise each to the top.
+	list = [ i[0] for i in list ]
+
+	info = {}
+	for i in list:
+		info[i.name] = i.content
+
+	return info
+
+if __name__ == "__main__":
+	try:
+		[npa, nxx] = parsenumber(" ".join(sys.argv[1:]))
+		if len(npa) != 3 or len(nxx) != 3:
+			raise
+	except:
+		print "Usage: %s <npa-nxx>" % sys.argv[0]
+		sys.exit(0)
+
+	try:
+		info = lookup(npa,nxx)
+	except IOError:
+		print "HTTP error"
+	except:
+		print "Not found"
+	else:
+		for i in ['RC', 'Region', 'Switch', 'Company-Name']:
+			print "%15s: %s" % (i, info[i.lower()])

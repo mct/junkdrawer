@@ -1,0 +1,37 @@
+#!/usr/bin/perl
+# vim:set ts=4 sw=4 ai:
+# mct, Tue Oct 31 17:16:50 EST 2006
+
+sub usage { die <<EOT
+
+A sort(1) that lets you specify an arbitrary perl expression to sort with.
+
+Usage: psort [-n] [-r] <expression> [file]
+
+    -n          Sort result of perl <expression> numerically
+
+    -r          Reverse the result of comparisons
+
+    expression  A valid perl expression which accepts as its only
+                argument one line from the input stream, and returns
+                a value suitable for use with perl's <=> (when -n is
+                specified), or cmp operators.
+
+Example:
+
+    psort -n length /etc/passwd
+
+EOT
+}
+
+use Getopt::Std;
+getopts "nr" or usage;
+
+my $sort = eval 'sub { $_ = $_[0]; ' . (shift or usage) . '}';
+die "Compilation of user-specified sort function failed.\n" if $@;
+
+print sort {
+		my ($x, $y) = $opt_r ? ($b, $a) : ($a, $b);
+		$opt_n ? $sort->($x) <=> $sort->($y)
+			   : $sort->($x) cmp $sort->($y)
+	} <>;

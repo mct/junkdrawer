@@ -1,0 +1,45 @@
+#!/usr/bin/perl -l
+# vim:set ts=4 sw=4 ai et smarttab:
+
+sub log_n {
+    my $base = shift;
+    my $num = shift;
+    return log($num)/log($base);
+}
+
+sub log2  { log_n( 2, @_) }
+sub log3  { log_n( 3, @_) }
+sub log4  { log_n( 4, @_) }
+sub log5  { log_n( 5, @_) }
+sub log6  { log_n( 6, @_) }
+sub log7  { log_n( 7, @_) }
+sub log8  { log_n( 8, @_) }
+sub log9  { log_n( 9, @_) }
+sub log10 { log_n(10, @_) }
+
+sub AUTOLOAD {
+    if ($AUTOLOAD =~ /^main::log(\d+)$/) {
+        return log_n($1, @_);
+    }
+
+    return undef;
+}
+
+my $ret = eval join " ", @ARGV;
+my $print;
+
+if ($0 =~ m/hex$/) {
+    $print = sprintf "0x%X", $ret;
+}
+elsif ($0 =~ /bin$/) {
+    $print = sprintf "0b%b", $ret;
+}
+elsif ($0 =~ /oct$/) {
+    $print = sprintf "0%o", $ret;
+}
+else {
+    $print = $ret;
+}
+
+die "Not numberic?  $ret\n" unless (eval($print) eq $ret);
+print $print;

@@ -1,0 +1,8 @@
+#!/usr/bin/perl -p
+
+# un-escapes URL escaping
+
+s/%(..)/chr hex $1/ge;
+s/\+/ /g;
+s/\?/\n/;
+s/\&/\n/g;

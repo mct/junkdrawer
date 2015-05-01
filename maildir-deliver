@@ -1,0 +1,35 @@
+#!/usr/bin/perl
+# vim:set ts=4 sw=4 ai et:
+
+# Deliver an email message from STDIN to a Maildir, with additional
+# options to set the unix group and permissions of the new message.
+
+use Getopt::Std;
+use Time::HiRes qw(time);
+use strict;
+use warnings;
+
+sub usage { die "Usage: $0 [-g group] [-m mode] <Maildir/>\n" }
+
+our ($opt_g, $opt_m);
+getopts "g:m:" or usage;
+my $dir = shift or usage;
+my $filename = "deliver." . time() . ".$$";
+
+chdir $dir or die "chdir: $!";
+die "$dir/tmp does not exist?" unless -d "tmp";
+die "$dir/new does not exist?" unless -d "new";
+open my $fd, "> tmp/$filename" or die "open: tmp/$filename: $!";
+local $/;
+$|++;
+print $fd <STDIN>;
+close $fd;
+
+chmod oct($opt_m), "tmp/$filename" if $opt_m;
+
+if ($opt_g) {
+    my $gid = (getgrnam $opt_g)[2] or die "getgrnam failed";
+    chown $<, $gid, "tmp/$filename" or die "chown: $!";
+}
+
+die "rename: new/$filename: $!" unless rename "tmp/$filename", "new/$filename";

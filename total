@@ -1,0 +1,17 @@
+#!/usr/bin/perl
+
+# Sums numeric data
+#
+# This used to be a one-line shell script, which is impressive only for its
+# obtuse use of dc(1):
+#
+#    ( cat $*; echo "[ [q]sq z2>q + lax ]sa lax p" ) | dc
+
+
+while (<>) {
+	while (/([\d.-]+)/g) {
+		$total += $1;
+	}
+}
+
+print "$total\n";

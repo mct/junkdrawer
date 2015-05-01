@@ -1,0 +1,57 @@
+#!/bin/bash
+# mct, Thu Sep 23 12:21:30 EDT 2004
+# mct, Sun Sep 26 23:10:40 EDT 2004
+
+# Run "apt-get update" and "apt-get dist-upgrade --simulate" to check if there
+# are pending security updates.  If so, send mail to root.  Intended to be run
+# from cron.
+
+try()
+{
+	tty -s && echo -n "Trying \"$*\""
+	for i in $(seq 1 5)
+	do
+		tty -s && echo -n .
+		if $*
+		then break
+		else sleep 2
+		fi
+	done
+	tty -s && echo
+}
+
+tmp=$(tempfile)
+trap "rm -f $tmp" EXIT INT HUP
+
+try apt-get -qqd update 2>&1 \
+	| grep -v '^W: Duplicate sources.list entry' \
+	| grep -v '^W: You may want to run apt-get update to correct these problems' \
+	| grep -v '^W: GPG error: http:'
+apt-get -s -qqduy dist-upgrade | awk '{print $2, $3}' | sort -u \
+	| grep -Fv 'fetchmail-common (5.9.11-6.3' \
+	| grep -Fv 'fetchmail-ssl (5.9.11-6.2' > $tmp
+
+try apt-get -qqduy dist-upgrade
+
+if [ ! -s $tmp ]
+then exit 0
+fi
+
+if tty -s 
+then output="cat"
+else output="sendmail -oi -t"
+fi
+
+(tty -s || cat <<EOT
+From: root
+To: root
+Subject: Pending security updates on $(hostname --fqdn)
+X-Status: F
+
+EOT
+cat <<EOT
+The following Debian packages are waiting to be upgraded:
+
+EOT
+sed -e 's,^,    ,' -e 's,$,),' $tmp
+	) | $output

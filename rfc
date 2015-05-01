@@ -1,0 +1,14 @@
+#!/bin/bash
+# mct, Tue Jan 29 14:56:43 EST 2002
+
+set -e
+
+cd ~/.rfc
+RFC=$1
+FILE=rfc${RFC}.txt
+URL=http://www.rfc-editor.org/rfc/$FILE
+
+if [ -z "$RFC" ]; then echo "Usage: $0 <rfc number>" >&2; exit -1; fi 
+if [ ! -f "$FILE.gz" ]; then wget $URL; gzip -9 $FILE; fi
+
+exec vim $FILE.gz

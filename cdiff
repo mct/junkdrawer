@@ -1,0 +1,255 @@
+#!/usr/bin/perl -w
+# vi:set ts=4 sw=4 ai nobackup:
+
+=pod
+
+cdiff -- A Cisco configuration differ
+Copyright (c) 2000 Michael C. Toren <mct@toren.net>
+Thu Mar  2 00:55:05 EST 2000
+
+Flowchart:
+
+	- Look for MAIN entries in router1 that are not in router2.  Negate them.
+
+		- If the entry appears as a sub-config as well, negate each sub-cmd.
+
+	- Look for MAIN entries in router2 that are not in router1.  Add them.
+
+		- If the entry appears as a sub-config as well, add each sub-cmd
+
+	- Iterate over every sub-config.
+
+		- Ignore sub-config's that don't appear in both router1 and router2
+
+		- Check for entries in router1 but not in router2.  negate them.
+
+		- Check for entries in router2 but not in router1.  add them.
+
+Notes:
+
+	- Assume each configuration begins with a "!" comment character
+
+	- Assume each configuration ends with an "end" command
+
+	- Assume all sub-commands are indented (true in at least IOS 11.3 and later)
+
+	- Try to handle multi-banners as best we can...
+
+	- Ignore ntp-clock-period changes
+
+=cut
+
+use strict;
+my ($filename1, $filename2, %router1, %router2);
+
+sub readconfig
+{
+	my ($filename, %router, $level, $line, $lastline,
+		$foundbeginning, $foundending, $inbanner);
+
+	$filename = shift;
+
+	if ($filename eq "-")
+	{
+		open IN, "< &STDIN"
+			or die "Could not dup(2) stdin: $!\n";
+	}
+
+	else
+	{
+		open IN, $filename
+			or die "Could not open $filename: $!\n";
+	}
+
+	$level = "MAIN";
+
+	while ($line = <IN>)
+	{
+		$line =~ s/[\n\r]+//;
+
+		if (! $foundbeginning)
+		{
+			$foundbeginning = 1 if ($line =~ /^!/);
+			next;
+		}
+
+		if ($line eq "end" && ! $inbanner)
+		{
+			$foundending = 1;
+			last;
+		}
+
+		next if ($line =~ /^\s*$/);
+		next if ($line =~ /^\s*!/);
+		next if ($line =~ /^ntp clock-period \d*$/);
+
+		if ($line =~ /^(banner|menu)/)
+		{
+			my $count = scalar (@_ = ($line =~ /\^C/g));
+			$inbanner = ($count == 2 || $count == 0) ? 0 : 1;
+			next;
+		}
+
+		if ($inbanner)
+		{
+			$inbanner = 0 if ($line =~ /(\^C)/);
+			next;
+		}
+
+		if ($line =~ /^\s+/)
+		{
+			$level = $lastline if ($level eq "MAIN");
+		}
+
+		else
+		{
+			$level = "MAIN";
+		}
+
+		$line =~ s/^ //;
+		push @{$router{$level}}, $line;
+		$lastline = $line;
+	}
+
+	if (! $foundbeginning)
+	{
+		warn "I wasn't able to find '!', which marks the beginning of a config.\n";
+		die "Bailing out of $filename ... \n";
+	}
+
+	if (! $foundending)
+	{
+		warn "I wasn't able to find the 'end' command in this config.\n";
+		die "Bailing out of $filename ... \n";
+	}
+
+	return %router;
+}
+
+sub diff
+{
+	my (%ref1, %ref2);
+	my ($output, $level, $i, $j, @buf1, @buf2, @buf);
+
+	%ref1 = %{$_[0]};
+	%ref2 = %{$_[1]};
+
+	OUTER:
+	for $i (@{$ref1{MAIN}})
+	{
+		for $j (@{$ref2{MAIN}})
+		{
+			next OUTER if ($i eq $j);
+		}
+
+		if ($ref1{$i})
+		{
+			push @buf2, "- $i\n";
+
+			for $j (@{$ref1{$i}})
+			{
+				push @buf2, "-  $j\n";
+			}
+
+			push @buf2, "\n";
+		}
+
+		else
+		{
+			push @buf1, "- $i\n";
+		}
+
+		next OUTER;
+	}
+
+
+	OUTER:
+	for $i (@{$ref2{MAIN}})
+	{
+		for $j (@{$ref1{MAIN}})
+		{
+			next OUTER if ($i eq $j);
+		}
+
+		if ($ref2{$i})
+		{
+			push @buf2, "+ $i\n";
+
+			for $j (@{$ref2{$i}})
+			{
+				push @buf2, "+  $j\n";
+			}
+
+			push @buf2, "\n";
+		}
+
+		else
+		{
+			push @buf1, "+ $i\n";
+		}
+
+		next OUTER;
+	}
+
+	# XXX @buf1 and @buf2 need to be sorted?
+
+	$output = join "", @buf1, "\n\n", @buf2, "\n\n";
+
+	for $level (sort keys %ref1)
+	{
+		my ($desc1, $desc2);
+
+		$desc1 = $desc2 = "";
+		@buf = ();
+
+		next if ($level eq "MAIN");
+		next unless $ref1{$level} && $ref2{$level};
+
+		OUTER:
+		for $i (@{$ref1{$level}})
+		{
+			$desc1 = $i if ($i =~ /^description\s*/);
+
+			for $j (@{$ref2{$level}})
+			{
+				next OUTER if ($i eq $j);
+			}
+
+			push @buf, " - $i\n";
+		}
+
+		OUTER:
+		for $i (@{$ref2{$level}})
+		{
+			$desc2 = $i if ($i =~ /^description\s*/);
+
+			for $j (@{$ref1{$level}})
+			{
+				next OUTER if ($i eq $j);
+			}
+
+			push @buf, " + $i\n";
+		}
+
+		if (@buf)
+		{
+			$output .= "o $level\n";
+			$output .= "o $desc1\n" if ($desc1 eq $desc2 && $desc1);
+			$output .= join "", @buf, "\n\n";
+		}
+	}
+
+	$output =~ s/\n{3,}/\n\n/mg;
+	$output =~ s/^\n*//m;
+	$output =~ s/\n{2,}$/\n/m;
+
+	return $output;
+}
+
+($filename1, $filename2) = @ARGV;
+die "Usage: $0 <filename1> <filename2>\n"
+	unless ($filename1 && $filename2);
+
+%router1 = &readconfig($filename1);
+%router2 = &readconfig($filename2);
+print &diff(\%router1, \%router2);

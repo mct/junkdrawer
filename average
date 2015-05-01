@@ -1,0 +1,84 @@
+#!/usr/bin/perl
+# vim:set ts=4 sw=4 ai:
+# mct, Thu Nov  9 15:37:49 EST 2006
+
+# Calculates the mean, median, standard deviation, etc for data read from
+# stdin.  Also includes support for "Algorithm III", one of the algorithms
+# for computing the mean and standard deviation incrementally, from
+# <http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance>'
+
+use strict;
+use warnings;
+
+undef $/;
+
+my @input = grep /^[\d.-]+$/, (@ARGV ? @ARGV : split /\s+/, <STDIN>);
+@input = sort { $a <=> $b } @input;
+
+die "Could not find any numeric data?\n" unless @input;
+
+sub mean
+{
+	my $total;
+	$total += $_ for (@_);
+	return $total / @_;
+}
+
+sub median
+{
+	my $middle = @_ / 2;
+	return $_[int $middle] if ($middle != int $middle);
+	return mean($_[$middle - 1], $_[$middle]);
+}
+
+sub averagedeviation
+{
+	my $mean = mean @_;
+	my @deviations = map { abs($_ - $mean) } @_;
+	return mean @deviations;
+}
+
+sub variance
+{
+	my $mean = mean @_;
+	my @deviations = map { abs($_ - $mean) ** 2 } @_;
+	return mean @deviations;
+}
+
+sub standarddeviation
+{
+	return sqrt(variance @_);
+}
+
+sub range
+{
+	return $_[-1] - $_[0];
+}
+
+
+# Algorithm III
+my $n = 0;
+my $mean = 0;
+my $S = 0;
+for my $x (@input)
+{
+	$n++;
+	my $delta = $x - $mean;
+	$mean = $mean + $delta/$n;
+	$S += $delta * ($x - $mean);
+}
+
+print <<EOT;
+              Median:  ${\( median(@input)            )}
+   Average Deviation:  ${\( averagedeviation(@input)  )}
+            Variance:  ${\( variance(@input)          )}
+               Range:  ${\( range(@input)             )}
+                 Min:  ${\( $input[0]                 )}
+                 Max:  ${\( $input[-1]                )}
+
+                Mean:  ${\( mean(@input)              )}
+  Standard Deviation:  ${\( standarddeviation(@input) )}
+
+  Algorithm III Mean:  $mean
+Algorithm III StdDev:  ${\( sqrt($S/($n-1)) )}
+EOT

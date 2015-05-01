@@ -1,0 +1,22 @@
+#!/usr/bin/perl 
+# mct, Wed Oct 20 13:00:43 EDT 2004
+# vim:set ts=4 sw=4:
+
+# A filter that truncates lines to the terminal's width
+# And for things like:
+#
+#       cat file-with-extremely-long-lines | nowrap
+
+use strict;
+use warnings;
+
+`stty size </dev/tty` =~ /^\d+ (\d+)$/;
+my $width = $1 - 1;
+
+while (<>)
+{
+	if (length >= $width) {
+		$_ = substr($_, 0, $width) . "\n";
+	}
+	print;
+}
