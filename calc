@@ -1,6 +1,17 @@
 #!/usr/bin/perl -l
 # vim:set ts=4 sw=4 ai et smarttab:
 
+# Calculates a mathematical expression the command line and prints the results.
+# The expression is evaluated with perl, allowing for more ease and complexity
+# than some other command line calculators, if you don't need things such as
+# arbitrary precision.  Also very handy for parsing hex and binary numbers
+# expressed as "0x" or "0b".  If symlinked and called as "hex", "oct", or
+# "bin", prints the results in hex, octal, or binary.
+#
+# I use this at least several times every day.
+#
+#           -- Michael Toren <mct@toren.net>
+
 sub log_n {
     my $base = shift;
     my $num = shift;
