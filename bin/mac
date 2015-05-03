@@ -25,7 +25,11 @@
 
 FILE=~/.oui.gz
 TMP=~/.oui.tmp
-URL=http://standards.ieee.org/regauth/oui/oui.txt
+
+#URL=http://standards.ieee.org/regauth/oui/oui.txt
+#URL=http://standards.ieee.org/develop/regauth/oui/oui.txt
+URL=http://standards-oui.ieee.org/oui.txt
+
 ME=$(basename $0)
 
 set -e
@@ -48,7 +52,7 @@ do
 			trap "rm -f $TMP" EXIT
 
 			if wget --version &>/dev/null
-				then (set -x; wget -q -O $TMP $URL)
+				then (set -x; wget -O $TMP $URL)
 
 			elif lynx --version &>/dev/null
 				then (set -x; lynx -source $URL > $TMP)
@@ -103,4 +107,4 @@ then
 	exit -1
 fi
 
-gunzip -c < $FILE | grep -i -B1 -A20 -- "^$PAT" | awk '/^[ \t]*$/ {exit} {print}'
+gunzip -c < $FILE | grep -i -B1 -A20 -- "^  *$PAT" | awk '/^[ \t]*$/ {exit} {print}'
