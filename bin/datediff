@@ -1,0 +1,68 @@
+#!/usr/bin/perl
+# Sat Jan  6 13:54:22 EST 2007
+# vim:set ts=4 sw=4 ai:
+
+use Date::Manip;
+use strict;
+use warnings;
+
+use Data::Dumper;
+
+my $one = shift or die "Usage: $0 <date> [date]\n";
+my $two = shift || "now";
+
+$_ = (ParseDateString $_
+	or die "Invalid date: $_\n")
+		for ($one, $two);
+
+($one, $two) = ($two, $one)
+	if (($one cmp $two) == 1);
+
+my $err;
+my $delta = DateCalc($one, $two, \$err, 1);
+die "Error: $err" if $err;
+
+my ($year, $month, $week, $day, $hour, $min, $sec)
+	= split /:/, $delta;
+
+$day += $week * 7;
+
+my @out;
+for (	[ $year,  "year"  ],
+		[ $month, "month" ],
+		[ $day,   "day"   ],
+		[ $hour,  "hour"  ],
+		[ $min,   "min"   ],
+		[ $sec,   "sec"   ])
+{
+	my ($val, $name) = @$_;
+	push @out, "$val $name" if $val;
+}
+
+print join(", ", @out), "\n";
+
+__END__
+	            => YY:MM:WK:DD:HH:MM:SS  the years, months, etc. between
+		                                        the two
+
+
+print Dumper [$one, $two];
+
+
+__END__
+
+my (undef, undef, $week, $day, $hour, $min, $sec) 
+	= split ":", DateCalc $boot, $now, undef;
+$day += $week * 7;
+
+my @users = split /\s+/, qx(users);
+
+open F, "/proc/loadavg" or die "/proc/loadavg: $!\n";
+my @load = (split /\s+/, <F>)[0 .. 2];
+close F;
+
+printf " %02d:%02d:%02d up %d days, %2d:%02d, %2d user%s,  load average: %s, %s, %s\n",
+	(localtime)[2,1,0],
+	$day, $hour, $min,
+	scalar @users, scalar @users > 1 ? "s" : "",
+	@load;

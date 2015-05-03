@@ -1,0 +1,54 @@
+#!/usr/bin/perl -w
+# vim:set ts=4 sw=4 ai nobackup:
+# mct, Sun Jul  7 15:22:02 EDT 2002
+# mct, Thu May 27 11:40:47 EDT 2004
+
+use Net::Telnet::Cisco;
+use Getopt::Std;
+use strict;
+
+sub handler
+{
+	die "ERROR: ", shift, "\n";
+}
+
+use vars qw($opt_u $opt_p $opt_e $host $cmd $output);
+
+getopts "u:p:e:" or die "Command line processing failed\n";
+$host = shift;
+$cmd = join " ", @ARGV;
+
+die "Usage: $0 [-u <username>] -p <password> [-e <enable] <router> <cmd>\n"
+	#unless ($host && $cmd && $opt_p);
+	unless ($host && $cmd);
+
+my $router = new Net::Telnet::Cisco
+	(Host => $host, Errmode => \&handler, Timeout => 15)
+		or die "Could not connect to $host\n";
+
+$opt_p ||= "password";
+$opt_u ||= "nobody";
+
+$router->login($opt_u, $opt_p)
+	or die "Could not login\n";
+$router->cmd("terminal length 0")
+	or die "Could not do 'term len 0'\n";
+
+if ($opt_e) {
+	$router->enable($opt_e);
+	$output = join "", $router->cmd("show privilege");
+	die "Sorry, could not enable -- output of 'show privilege': $output\n"
+		unless ($output =~ /\s+15$/);
+}
+
+$output = "";
+for my $i (split /\s*;\s*/, $cmd)
+{
+	next unless ($i);
+	my $tmp = join "", $router->cmd("$i")
+		or die "Ooops, '$cmd' failed silently?\n";
+	$output .= "!!! $0 executing '$i'\n\n$tmp";
+	$output .= "\n" if ($output !~ /\n\n$/m);
+}
+
+print $output;

@@ -1,0 +1,11 @@
+#!/usr/bin/python
+# vim:set ts=4 sw=4 ai et smarttab:
+
+import sys
+import bencode
+import json
+
+for i in sys.argv[1:]:
+    b = bencode.bdecode(open(i).read())
+    json.dump(b, sys.stdout, indent=4, sort_keys=True, ensure_ascii=True)
+    print
