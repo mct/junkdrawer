@@ -1,0 +1,46 @@
+#!/usr/bin/perl
+# vim: set ts=4 sw=4 ai et smarttab:
+
+# Kills all mosh-server processes, except the one you're currently connected
+# from.  Handy for when you've connected a bunch of times from a laptop that
+# has since been rebooted.
+#                               -- Michael Toren <mct@toren.net>
+#                                  Tue Jun 11 12:33:06 PDT 2013
+
+use strict;
+use warnings;
+use Data::Dumper;
+
+my %names;
+my %ppid;
+my %candidates;
+
+my $flags = $ARGV[0] || "jx";
+open my $fd, "ps $flags |" or die;
+while (<$fd>) {
+    my ($ppid, $pid, $name) = (split)[0,1,9];
+    $names{$pid} = $name;
+    $ppid{$pid} = $ppid;
+    $candidates{$pid} = 1
+        if $name eq "mosh-server";
+}
+
+die "No mosh-servers running?\n"
+    unless (%candidates);
+
+#print Dumper \%candidates;
+#print Dumper \%ppid;
+
+my $found_my_mosh;
+for (my $i = $$; $i != 1; $i = $ppid{$i}) {
+    delete $candidates{$i};
+    $found_my_mosh++ if $names{$i} eq "mosh-server";
+}
+
+die "Not run from a descendent of a mosh-server process?\n"
+    unless $found_my_mosh;
+
+for my $i (keys %candidates) {
+    print "Killing PID $i\n";
+    kill 9, $i
+}
