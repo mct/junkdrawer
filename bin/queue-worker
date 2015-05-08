@@ -10,10 +10,10 @@ use warnings;
 our ($opt_d, $opt_v);
 
 getopts "vd:" or exit 1;
-my $program = join " ", @ARGV;
+my @program = @ARGV;
 
-die "Usage: -d=DIRECTORY PROGRAM\n"
-    unless $opt_d and $program;
+die "Usage: [-v] -d=DIRECTORY PROGRAM [ARGS ..]\n"
+    unless $opt_d and @program;
 
 sub verbose {
     warn @_ if $opt_v;
@@ -32,7 +32,7 @@ sub run {
     if ($pid == 0) {
         open(STDIN, "<&", $fd) or die "dup: $!\n";
         close $fd;
-        exec $program;
+        exec { $program[0] } @program;
         exit 1;
     }
 
