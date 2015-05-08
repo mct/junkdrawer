@@ -1,0 +1,27 @@
+#!/usr/bin/perl
+# vim:set ai sw=4 ts=4 et:
+
+use Getopt::Std;
+
+use strict;
+use warnings;
+
+our ($opt_d);
+getopts "d:" or exit 1;
+
+die "Usage: --d=DIRECTORY [file]\n"
+    unless $opt_d;
+
+my $prefix = sprintf "%s.%s.%04d", time, $$, int(rand 10000);
+my $tempname = "$opt_d/.$prefix";
+my $filename = "$opt_d/$prefix";
+
+local $/ = \32768;
+open my $fd, "> $tempname" or die "open: $!";
+
+while (<>) {
+    print $fd $_;
+}
+
+close $fd;
+rename $tempname, $filename or die "rename: $!\n";

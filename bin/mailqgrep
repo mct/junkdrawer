@@ -1,0 +1,15 @@
+#!/usr/bin/perl
+# vi:set ai sw=4 ts=4 et:
+
+use strict;
+use warnings;
+
+local $/ = "";
+my $regex = shift or die "Usage: $0 <regex>\n";
+
+open my $fd, "mailq |" or die;
+
+while (<$fd>) {
+    #print ">> $_\n";
+    print if /$regex/i;
+}
