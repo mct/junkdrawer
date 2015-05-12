@@ -1,0 +1,26 @@
+#!/usr/bin/perl -w
+# mct, 2002-06-08
+
+# Reads the uptimed data file, and prints the times of the last known
+# shutdowns.  This is mostly useful if you've set "LOG_MAXIMUM_ENTRIES"
+# to "0" in /etc/uptimed.conf, to store an unlimited number of entries
+# as opposed to just the top N uptime records.
+
+use strict;
+
+my $file = "/var/spool/uptimed/records";
+my @data;
+
+open F, $file or die "$file: $!\n";
+
+while (<F>)
+{
+    my ($btime, $utime) = split /:/;
+    my $stime = $btime + $utime;
+    push @data, $stime;
+}
+
+@data = sort @data;
+pop @data;
+
+print scalar(localtime $_), "\n" for (@data);
