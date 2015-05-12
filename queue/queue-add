@@ -16,7 +16,7 @@ my $prefix = sprintf "%s.%s.%04d", time, $$, int(rand 10000);
 my $tempname = "$opt_d/.$prefix";
 my $filename = "$opt_d/$prefix";
 
-local $/ = \32768;
+local $/ = \32768; # do 32k reads
 open my $fd, "> $tempname" or die "open: $!";
 
 while (<>) {
