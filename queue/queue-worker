@@ -7,19 +7,19 @@ use Fcntl ':flock';
 use strict;
 use warnings;
 
-our ($opt_d, $opt_v);
+our ($opt_d, $opt_s, $opt_v);
 
-getopts "vd:" or exit 1;
+getopts "vd:s:" or exit 1;
 my @program = @ARGV;
 
-die "Usage: [-v] -d=DIRECTORY PROGRAM [ARGS ..]\n"
+die "Usage: [-v] [-s SLEEP_TIME] -d=DIRECTORY PROGRAM [ARGS ..]\n"
     unless $opt_d and @program;
 
 sub verbose {
     warn @_ if $opt_v;
 }
 
-sub run {
+sub execute {
     my ($fd, $file) = @_;
 
     my $pid = fork;
@@ -41,49 +41,64 @@ sub run {
     return $?;
 }
 
-my $fd;
+sub runq {
+    my $fd;
 
-while (my $file = <$opt_d/*>) {
-    my ($links_before, $links_after);
+    while (my $file = <$opt_d/*>) {
+        my ($links_before, $links_after);
 
-    unless (-f $file) {
-        next;
+        unless (-f $file) {
+            next;
+        }
+
+        unless (open $fd, $file) {
+            $!{ENOENT} or die "open: $file: $!\n";
+            verbose "$file already handled by another process\n";
+            next;
+        }
+
+        $links_before = (stat $fd)[3];
+
+        unless (flock $fd, LOCK_EX|LOCK_NB) {
+            $!{EWOULDBLOCK} or die "flock: $file: $!\n";
+            verbose "$file locked by another process\n";
+            next;
+        }
+
+        $links_after = (stat $fd)[3];
+
+        unless ($links_before == $links_after) {
+            verbose "$file already handled by another process (with scheduler idiosyncrasies)\n";
+            close $fd;
+            next;
+        }
+
+        verbose "Processing $file\n";
+
+        unless (execute($fd, $file) == 0) {
+            verbose "Worker program returned non-zero, skipping for now\n";
+            next;
+        }
+
+        unlink $file or die "unlink: $file: $!\n";
     }
 
-    unless (open $fd, $file) {
-        $!{ENOENT} or die "open: $file: $!\n";
-        verbose "$file already handled by another process\n";
-        next;
-    }
-
-    $links_before = (stat $fd)[3];
-
-    unless (flock $fd, LOCK_EX|LOCK_NB) {
-        $!{EWOULDBLOCK} or die "flock: $file: $!\n";
-        verbose "$file locked by another process\n";
-        next;
-    }
-
-    $links_after = (stat $fd)[3];
-
-    unless ($links_before == $links_after) {
-        verbose "$file already handled by another process (with scheduler idiosyncrasies)\n";
+    continue {
         close $fd;
-        next;
     }
-
-    verbose "Processing $file\n";
-
-    unless (run($fd, $file) == 0) {
-        verbose "Worker program returned non-zero, skipping for now\n";
-        next;
-    }
-
-    unlink $file or die "unlink: $file: $!\n";
 }
 
-continue {
-    close $fd;
-}
+$SIG{HUP} = sub { verbose "HUP\n" };
 
-verbose "Done\n"
+while (1) {
+    runq;
+
+    if ($opt_s) {
+        verbose "Sleeping for $opt_s\n";
+        sleep $opt_s;
+    }
+    else {
+        verbose "Done\n";
+        last;
+    }
+}
