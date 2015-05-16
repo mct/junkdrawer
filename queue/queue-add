@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 # vim:set ai sw=4 ts=4 et:
 
+# Michael Toren <mct@toren.net>
+# Public Domain
+
 use Getopt::Std;
 
 use strict;
@@ -9,7 +12,7 @@ use warnings;
 our ($opt_d);
 getopts "d:" or exit 1;
 
-die "Usage: --d=DIRECTORY [file]\n"
+die "Usage: -d=DIRECTORY [file]\n"
     unless $opt_d;
 
 my $prefix = sprintf "%s.%s.%04d", time, $$, int(rand 10000);

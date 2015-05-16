@@ -8,16 +8,19 @@ putting them here because they may be useful to someone, or I've had occasion
 to reference them in discussion with someone, or to refer to them myself as
 templates or examples.
 
-## License
-
-For things I've written, either Public Domain, or any BSD license you choose.
-
-Anything in here I haven't written is clearly indicated so.
-
-## Author
+## Author, and License
 
 Most of this code was written by [Michael Toren](http://github.com/mct)
+
+For things I've written, licened as either Public Domain, or any BSD license
+you choose.
+
+Anything in here I haven't written is clearly indicated so.
 
 ## Index
 
 * **bin**:  Command line utilities from $HOME/bin
+
+* **c**, **perl**, **python**: Random code snippets
+
+* **queue**: A simple, disk-backed, directory-based queue

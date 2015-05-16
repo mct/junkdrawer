@@ -1,6 +1,9 @@
 #!/usr/bin/perl
 # vim:set ai sw=4 ts=4 et:
 
+# Michael Toren <mct@toren.net>
+# Public Domain
+
 use Getopt::Std;
 use Fcntl ':flock';
 
