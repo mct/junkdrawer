@@ -1,0 +1,24 @@
+#!/bin/bash
+# vim:set ts=4 sw=4 ai et:
+
+# symlink any command you'd like the output of to be piped through less(1)
+# to this script.  It removes itself from $PATH, then execs $0.
+
+set -e
+
+DIR=$(dirname $0)
+BASE=$(basename $0)
+
+for i in $(echo $PATH | tr : ' ')
+do
+    if test $DIR != $i
+    then
+        if test -z "$NEWPATH"
+        then NEWPATH=$i
+        else NEWPATH=$NEWPATH:$i
+        fi
+    fi
+done
+
+PATH=$NEWPATH
+exec $BASE "$@" | less --quit-if-one-screen
