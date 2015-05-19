@@ -8,6 +8,7 @@ set -e
 
 DIR=$(dirname $0)
 BASE=$(basename $0)
+FLAGS="--quit-if-one-screen"
 
 for i in $(echo $PATH | tr : ' ')
 do
@@ -20,5 +21,9 @@ do
     fi
 done
 
+if test "$BASE" = "colordiff"
+then FLAGS="$FLAGS -R"
+fi
+
 PATH=$NEWPATH
-exec $BASE "$@" | less --quit-if-one-screen
+exec $BASE "$@" | less $FLAGS
