@@ -21,7 +21,7 @@ do
     fi
 done
 
-if test "$BASE" = "colordiff"
+if test "$BASE" = "colordiff" || test "$BASE" = "unicode"
 then FLAGS="$FLAGS -R"
 fi
 
