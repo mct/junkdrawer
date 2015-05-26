@@ -19,11 +19,11 @@ Anything in here I haven't written is clearly indicated so.
 
 ## Index
 
-* **bin**:  Command line utilities from $HOME/bin
+* **bin/**:  Command line utilities from $HOME/bin
 
-* **c**, **perl**, **python**: Random code snippets
+* **c/**, **perl/**, **python/**: Random code snippets
 
-* **queue**: A simple, disk-backed, directory-based queue
+* **queue/**: A simple, disk-backed, directory-based queue
 
-* **setuidgids**: Similar to setuidgid (singular) from djb's daemontools, but
+* **setuidgids/**: Similar to setuidgid (singular) from djb's daemontools, but
    also calls setgroups(2) to set the specified user's supplementary groups.
