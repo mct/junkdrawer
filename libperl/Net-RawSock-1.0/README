@@ -1,0 +1,112 @@
+Net::RawSock - Perl module to send network raw IP datagrams
+
+Stephane Aubert aka Kotao <Stephane.Aubert@hsc-labs.com>
+HSC security research labs
+Hervé Schauer Consultants
+
+Copyright (c) 2001 Stephane Aubert. All rights reserved. This program is 
+free software; you can redistribute it and/or modify it under the same 
+terms as Perl itself.
+
+Description
+===========
+
+Net::RawSock provides a base function to send raw IP datagrams 
+from Perl. The raw IP datagam is packed into a buffer and written 
+on the network layer with the write_ip() function.
+
+Download
+========
+
+Main site: <URL: http://www.hsc.fr/tools/>
+
+
+Howto install
+-------------
+
+% perl Makefile.PL
+% make
+# make install
+
+Howto test
+----------
+
+# ./demo.pl
+
+You should see :
+
+xor [root] ~# tcpdump -lnx -s 1500 -i lo 
+tcpdump: listening on lo
+21:22:39.800446 127.0.0.1.33842 > 127.0.0.1.80: S 2877615549:2877615549(0)
+win 32767 <mss 16396,sackOK,timestamp 10035571 0,nop,wscale 0> (DF) [tos 0x10] 
+                         4510 003c ccce 4000 4006 6fdb 7f00 0001
+                         7f00 0001 8432 0050 ab84 edbd 0000 0000
+                         a002 7fff 4fdc 0000 0204 400c 0402 080a
+                         0099 2173 0000 0000 0103 0300
+
+
+Howto use
+---------
+
+#! /usr/bin/perl
+
+use Net::RawSock;
+
+## $pkt comes from: tcpdump -lnx -s 1500 -i lo
+my $pkt =    
+  "\x45\x10\x00\x3c\xcc\xce\x40\x00\x40\x06\x6f\xdb\x7f\x00\x00\x01".
+  "\x7f\x00\x00\x01\x84\x32\x00\x50\xab\x84\xed\xbd\x00\x00\x00\x00".
+  "\xa0\x02\x7f\xff\x4f\xdc\x00\x00\x02\x04\x40\x0c\x04\x02\x08\x0a".
+  "\x00\x99\x21\x73\x00\x00\x00\x00\x01\x03\x03\x00";
+
+Net::RawSock::write_ip($pkt);
+
+
+Extended use:
+-------------
+
+You will need a very nice package, called NetPacket, by Tim Potter
+<URL: http://www.cpan.org/modules/by-module/NetPacket/>
+
+Sample code to create and send a TCP/IP raw datagram from scratch :
+
+#! /usr/bin/perl
+use Net::RawSock;
+use NetPacket::IP;
+use NetPacket::TCP;
+
+## Create IP
+my $ip = NetPacket::IP->decode(''); 
+
+## Init IP
+$ip->{ver}        = 4; 
+$ip->{hlen}       = 5;
+$ip->{tos}        = 0;
+$ip->{id}         = 0x1d1d;
+$ip->{ttl}        = 0x5a;
+$ip->{src_ip}     = '127.0.0.1';
+$ip->{dest_ip}    = '127.0.0.1';
+$ip->{flags}      = 2;
+
+## Create TCP
+my $tcp = NetPacket::TCP->decode('');
+
+## Init TCP
+$tcp->{hlen}      = 5;
+$tcp->{winsize}   = 0x8e30;
+$tcp->{src_port}  = 13579;
+$tcp->{dest_port} = 80;
+$tcp->{seqnum}    = 0xFEED;
+$tcp->{acknum}    = 0xC0DE;
+$tcp->{flags}     = SYN | FIN;
+
+## Assemble
+$ip->{proto}      = 6; 
+$ip->{data}       = $tcp->encode($ip);
+
+## Create RAW
+my $pkt = $ip->encode;
+
+## Write to network layer
+Net::RawSock::write_ip($pkt);
+

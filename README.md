@@ -27,3 +27,5 @@ Anything in here I haven't written is clearly indicated so.
 
 * **setuidgids/**: Similar to setuidgid (singular) from djb's daemontools, but
    also calls setgroups(2) to set the specified user's supplementary groups.
+
+* **libperl/perl-Net-RawSock/**:  Mirroed from http://www.hsc.fr/ressources/outils/rawsock/
