@@ -1,4 +1,4 @@
-#!/usr/bin/perl -l -s
+#!/usr/bin/perl -s
 # vim:set ts=4 sw=4 ai et smarttab:
 
 # Calculates a mathematical expression the command line and prints the results.
@@ -11,6 +11,10 @@
 # I use this at least several times every day.
 #
 #           -- Michael Toren <mct@toren.net>
+
+use Math::Trig;
+
+our($AUTOLOAD, $v, $V);
 
 sub log_n {
     my $base = shift;
@@ -36,25 +40,52 @@ sub AUTOLOAD {
     return undef;
 }
 
-my $input = join " ", @ARGV;
-$input =~ s/ (\d) , (\d) /$1_$2/gx;
-print ">> $input" if $v;
+my $last_result = 0;
 
-my $ret = eval $input;
-my $print;
+sub calc {
+    my $input = join " ", @_;
+    return unless length $input > 0;
 
-if ($0 =~ m/hex$/) {
-    $print = sprintf "0x%X", $ret;
-}
-elsif ($0 =~ /bin$/) {
-    $print = sprintf "0b%b", $ret;
-}
-elsif ($0 =~ /oct$/) {
-    $print = sprintf "0%o", $ret;
-}
-else {
-    $print = $ret;
+    # Expand commas to underscores, so "1,000" works like "1_000"
+    $input =~ s/(\d) , (\d)/$1_$2/gx;
+    
+    # Expand "." to the last result
+    $input =~ s/(^|[^\w]) \. ([^\w]|$)/$1$last_result$2/gx;
+
+    print ">> [$input]\n" if $v;
+
+    my $ret = eval { package sandbox; eval $input; };
+    my $print;
+
+    if ($0 =~ m/hex$/) {
+        $print = sprintf "0x%X", $ret;
+    }
+    elsif ($0 =~ /bin$/) {
+        $print = sprintf "0b%b", $ret;
+    }
+    elsif ($0 =~ /oct$/) {
+        $print = sprintf "0%o", $ret;
+    }
+    else {
+        $print = $ret;
+    }
+
+    unless (eval($print) eq $ret) {
+        warn "Warning: Not numeric?  $ret\n";
+    }
+    else {
+        $last_result = $ret;
+    }
+
+    print $print, "\n";
 }
 
-die "Not numberic?  $ret\n" unless (eval($print) eq $ret);
-print $print;
+if (@ARGV) {
+    calc @ARGV;
+    exit;
+}
+
+while (<>) {
+    chomp;
+    calc $_;
+}
