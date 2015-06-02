@@ -12,8 +12,6 @@
 #
 #           -- Michael Toren <mct@toren.net>
 
-use Math::Trig;
-
 our($AUTOLOAD, $v, $V);
 
 sub log_n {
@@ -46,15 +44,32 @@ sub calc {
     my $input = join " ", @_;
     return unless length $input > 0;
 
+    # Remove "calc " from the beginning of the line.  Useful if in REPL
+    # mode, but accidentally include "calc" because I'm used to typing
+    # it when entering an expression on the command line.
+    $input =~ s/^calc\s+//;
+
     # Expand commas to underscores, so "1,000" works like "1_000"
     $input =~ s/(\d) , (\d)/$1_$2/gx;
-    
+
     # Expand "." to the last result
     $input =~ s/(^|[^\w]) \. ([^\w]|$)/$1$last_result$2/gx;
 
     print ">> [$input]\n" if $v;
 
-    my $ret = eval { package sandbox; eval $input; };
+    my $ret;
+
+    {
+        package sandbox;
+        use Math::Trig;
+        $ret = eval $input;
+    }
+
+    if ($@) {
+        print "Error: $@";
+        return;
+    }
+
     my $print;
 
     if ($0 =~ m/hex$/) {
@@ -85,7 +100,26 @@ if (@ARGV) {
     exit;
 }
 
-while (<>) {
-    chomp;
-    calc $_;
+
+use Term::ReadLine;
+my $term = Term::ReadLine->new("calc");
+$term->ornaments(0);
+
+my $lastexpr;
+
+while (1) {
+    my $line = $term->readline("");
+    last unless defined $line;
+
+    if ($line eq "!!") {
+        $line = $lastexpr;
+        #print ">> $line\n" if $lastexpr;
+    }
+
+    calc $line;
+
+    if ($line =~ /\S/) {
+        $lastexpr = $line;
+        $term->addhistory($line);
+    }
 }
