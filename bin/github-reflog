@@ -1,0 +1,41 @@
+#!/usr/bin/perl
+# vim:set ai sw=4 ts=4 et:
+
+# Uses the github API to fetch information about a repository, which includes
+# a reflog, of sorts, in JSON format.  mct, Tue Jun  9 01:00:14 PDT 2015
+
+use LWP::UserAgent;
+
+use strict;
+use warnings;
+
+# Test if the first argument is a URL.  If it is, extract the username
+# and project name, and replace @ARGV with it.  Further processing of
+# ARGV can then proceed only knowing about the "<username> <repo>"
+# command line format.
+if ($ARGV[0] and $ARGV[0] =~ m,^https?://,) {
+    my ($proto, $host, $user, $repo) = split /\/+/, $ARGV[0];
+    $host =~ s/^www\.//;
+    die "non-github URL\n" unless ($host and $host eq "github.com");
+    die "URL is missing github username\n" unless $user and $user =~ /^\w+$/;
+    die "URL is missing github project\n" unless $repo and $repo =~ /^\w+$/;
+    @ARGV = ($user, $repo);
+}
+
+my $user = shift or die "Usage: $0 <url>|<username> <repo>\n";
+my $repo = shift or die "Usage: $0 <url>|<username> <repo>\n";
+
+my $url = "https://api.github.com/repos/$user/$repo/events";
+
+# If we set our user agent to "curl", github sends pretty-printed JSON.
+# Otherwise, github sends white-space compressed JSON, which is annoying.
+my $ua = LWP::UserAgent->new;
+$ua->agent("curl");
+$ua->timeout(5);
+
+my $response = $ua->get($url);
+
+die $response->status_line unless $response->is_success;
+
+open my $fd, "| less --quit-if-one-screen" or die "fork";
+print $fd $response->decoded_content;
