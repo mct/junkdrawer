@@ -5,26 +5,44 @@
 # Public Domain
 
 use Getopt::Std;
+use Time::HiRes qw(gettimeofday);
+use Sys::Hostname;
 
 use strict;
 use warnings;
 
-our ($opt_d);
-getopts "d:" or exit 1;
+our ($opt_d, $opt_l);
+getopts "ld:" or exit 1;
 
 die "Usage: -d=DIRECTORY [file]\n"
     unless $opt_d;
 
-my $prefix = sprintf "%s.%s.%04d", time, $$, int(rand 10000);
-my $tempname = "$opt_d/.$prefix";
-my $filename = "$opt_d/$prefix";
+my $host = hostname;
 
-local $/ = \32768; # do 32k reads
-open my $fd, "> $tempname" or die "open: $!";
+sub queue {
+    my ($time, $utime) = gettimeofday();
+    my $prefix = sprintf "%010d.%06d.%s.%s.%04d", $time, $utime, $host, $$, int(rand 10000);
+    my $tempname = "$opt_d/.$prefix";
+    my $filename = "$opt_d/$prefix";
+    my $data = shift;
 
-while (<>) {
-    print $fd $_;
+    local $/ = \32768; # do 32k reads
+    open my $fd, "> $tempname" or die "open: $!";
+
+    if ($data) {
+        print $fd $data;
+    }
+    else {
+        print $fd $_ while <>;
+    }
+
+    close $fd;
+    rename $tempname, $filename or die "rename: $!\n";
 }
 
-close $fd;
-rename $tempname, $filename or die "rename: $!\n";
+if ($opt_l) {
+    queue $_ while <>;
+}
+else {
+    queue;
+}

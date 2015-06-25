@@ -13,6 +13,8 @@ file in the queue directory.
 
 Either Public Domain, or any BSD license you choose.
 
+If you find this useful, I'd love to hear about it.
+
 ## Author
 
 [Michael Toren](http://github.com/mct)
