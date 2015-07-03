@@ -47,7 +47,7 @@ sub execute {
 sub runq {
     my $fd;
 
-    while (my $file = <$opt_d/*>) {
+    while (my $file = <$opt_d/[1-9][0-9][0-9]*>) {
         my ($links_before, $links_after);
 
         unless (-f $file) {
