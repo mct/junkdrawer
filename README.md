@@ -12,10 +12,12 @@ templates or examples.
 
 Most of this code was written by [Michael Toren](http://github.com/mct)
 
-For things I've written, licened as either Public Domain, or any BSD license
+For things I've written, licensed as either Public Domain, or any BSD license
 you choose.
 
 Anything in here I haven't written is clearly indicated so.
+
+I'm curious if anyone ends up using snippets from here.  Drop me a line.
 
 ## Index
 
