@@ -1,13 +1,36 @@
 #!/usr/bin/perl
 # vim:set ai sw=4 ts=4 et:
 
-# Uses the github API to fetch information about a repository, which includes
-# a reflog, of sorts, in JSON format.  mct, Tue Jun  9 01:00:14 PDT 2015
+# From https://objectpartners.com/2014/02/11/recovering-a-commit-from-githubs-reflog/
+# Uses the github API to fetch information about a repository, which includes a
+# reflog, of sorts, in JSON format.  mct, Tue Jun  9 01:00:14 PDT 2015
 
 use LWP::UserAgent;
 
 use strict;
 use warnings;
+
+# Check if the first argument is an URL
+if ($ARGV[0] and $ARGV[0] =~ m,^https?://,) {
+    my ($proto, $host, $user, $repo) = split /\/+/, $ARGV[0];
+
+}
+
+# If no command line arguments were given, check if we're in a directory
+# managed by git, and if one of the remotes is a github URL
+if (! @ARGV)
+{
+    open my $fd, "git remote -v 2>/dev/null |" or die "fork: $!";
+
+    while (<$fd>) {
+        next unless /github\.com[\:\/](\w+)\/(\w+)/;
+        @ARGV = ($1, $2);
+        last;
+    }
+
+    close $fd;
+}
+
 
 # Test if the first argument is a URL.  If it is, extract the username
 # and project name, and replace @ARGV with it.  Further processing of
