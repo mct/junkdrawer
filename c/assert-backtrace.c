@@ -11,7 +11,7 @@ Compile with "-rdynamic" to include function names in the backtrace output
 
 Example output:
 
-$ gcc -rdynamic -Werror -o assert-backtrace assert-backtrace.c && ./assert-backtrace
+$ gcc -rdynamic -Werror assert-backtrace.c && ./a.out
 Died with signal 6.  Backtrace:
 
    0   assert-backtrace(handler+0x25) [0x400b81]
@@ -29,6 +29,7 @@ Died with signal 6.  Backtrace:
 
 */
 
+#define BACKWARDS
 #define STACK_DEPTH   20
 void handler(int sig)
 {
@@ -39,14 +40,23 @@ void handler(int sig)
     size = backtrace(buffer, STACK_DEPTH);
     strings = backtrace_symbols(buffer, size);
 
-    fprintf(stderr, "Died with signal %d.  Backtrace:\n\n", sig);
+    fprintf(stderr, "Aborted.  Backtrace:\n\n", sig);
 
-    for (i = 0; i < size; i++) {
-        if (strings[i][0] == '.' && strings[i][1] == '/')
-            strings[i] += 2;
+    #ifdef BACKWARDS
+        for (i = size-1; i >= 0; i--) {
+            if (strings[i][0] == '.' && strings[i][1] == '/')
+                strings[i] += 2;
+            printf(" %3d   %s\n", i, strings[i]);
+        }
+    #else
+        for (i = 0; i < size; i++) {
+            if (strings[i][0] == '.' && strings[i][1] == '/')
+                strings[i] += 2;
 
-        printf(" %3d   %s\n", i, strings[i]);
-    }
+            printf(" %3d   %s\n", i, strings[i]);
+        }
+    #endif
+
     printf("\n");
     exit(1);
 }
