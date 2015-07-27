@@ -10,12 +10,12 @@ use Fcntl ':flock';
 use strict;
 use warnings;
 
-our ($opt_d, $opt_s, $opt_v);
+our ($opt_d, $opt_s, $opt_v, $opt_m);
 
-getopts "vd:s:" or exit 1;
+getopts "vd:s:m:" or exit 1;
 my @program = @ARGV;
 
-die "Usage: [-v] [-s SLEEP_TIME] -d=DIRECTORY PROGRAM [ARGS ..]\n"
+die "Usage: [-v] [-s SLEEP_TIME] [-m MAX] -d=DIRECTORY PROGRAM [ARGS ..]\n"
     unless $opt_d and @program;
 
 sub verbose {
@@ -45,10 +45,15 @@ sub execute {
 }
 
 sub runq {
-    my $fd;
+    my ($fd, $num);
 
     while (my $file = <$opt_d/[1-9][0-9][0-9]*>) {
         my ($links_before, $links_after);
+
+        if ($opt_m && $num++ >= $opt_m) {
+            verbose "Reached maximum of $num entries\n";
+            exit;
+        }
 
         unless (-f $file) {
             next;
