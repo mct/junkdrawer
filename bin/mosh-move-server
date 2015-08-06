@@ -1,0 +1,64 @@
+#!/bin/bash
+# vim:set ts=4 sw=4 ai et:
+
+## I'm a horrible, horrible person.
+##
+## Patches a live mosh-client process to change the IP of the server it's
+## trying to talk to.  Useful if the IP used to reach a server is different
+## depending on your locale.  For example, if from one location you need to
+## use an internal IP, but from elsewhere you need to use an external IP.
+##
+## This won't work at all unless you've compiled mosh with debugging symbols.
+##
+## It's possible to write an even more evil version that wouldn't require
+## symbols.  Set a breakpoint on sendto(2), and note the memory location of
+## sockaddr, which we know to be static.  If you write that before I end up
+## getting to it, please let me know. :-)
+##
+##                   Michael Toren <mct@toren.net>
+##                   Thu Aug  6 02:31:58 PDT 2015
+
+# The hostname the mosh process is connected to, as it appears in the process list
+HOST=ix
+
+# Decimal representation in host byte order
+INTERNAL_IP=36350144
+EXTERNAL_IP=2197821368
+
+###
+
+PID=$(ps auxfw | grep -w "[m]osh-client .* $HOST " | awk '{print $2}')
+FOUND=$(echo "$PID" | wc -w)
+
+if test "$FOUND" -ne 1
+then
+    echo "Expected to find 1 process to $HOST, but found $FOUND"
+    exit -1
+fi
+
+case "$1" in
+    query)
+        CMD=""
+        ;;
+
+    internal|home)
+        CMD="= $INTERNAL_IP"
+        ;;
+
+    external|away)
+        CMD="= $EXTERNAL_IP"
+        ;;
+
+    *)
+        echo "Usage: $(basename $0) <query|internal|external>"
+        exit -1
+        ;;
+esac
+
+set -x
+gdb -p "$PID"       \
+    -ex "bt"        \
+    -ex "up 100"    \
+    -ex "p client->network->connection->remote_addr.sin.sin_addr.s_addr $CMD" \
+    -ex "quit"      \
+        </dev/null
