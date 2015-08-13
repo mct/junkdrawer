@@ -1,0 +1,18 @@
+#!/bin/bash
+# vim:set ts=4 sw=4 ai et:
+
+# From Dietrich Epp's answer to this StackOverflow question:
+# http://stackoverflow.com/questions/2179722/checking-out-old-file-with-original-create-modified-timestamps
+
+if ! date --version | grep -q 'Free Software Foundation'
+then
+    echo "Sorry, GNU date required"
+    exit -1
+fi
+
+for FILE in $(git ls-files)
+do
+    TIME=$(git log --pretty=format:%cd -n 1 --date=iso $FILE)
+    TIME=$(date -d "$TIME" +%Y%m%d%H%M.%S)
+    touch -m -t $TIME $FILE
+done
