@@ -42,5 +42,12 @@ int main(int argc, char *argv[])
     printf("Integer: %d\n", integer);
     printf("Flag:    %s\n", flag? "yes" : "no");
 
+    if (optind < argc) {
+        printf("Non-option ARGV-elements: ");
+        while (optind < argc)
+            printf("%s ", argv[optind++]);
+        printf("\n");
+    }
+
     return 0;
 }

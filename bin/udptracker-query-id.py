@@ -32,11 +32,11 @@ except:
 
 id = random.randint(0, 0xffffffff)
 msg = pack("!QLL", 0x41727101980, 0, id) # action=0, Connection Request
-#print "-->", msg.encode("hex")
+print "-->", msg.encode("hex")
 sock.sendto(msg, (hostname, port))
 
 msg, (remote_ip, remote_port) = sock.recvfrom(128*1024)
-#print "<--", msg.encode("hex")
+print "<--", msg.encode("hex")
 action, returned_id, connection_id = unpack("!LLQ", msg)
 assert action == 0
 assert returned_id == id

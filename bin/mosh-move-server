@@ -21,9 +21,13 @@
 # The hostname the mosh process is connected to, as it appears in the process list
 HOST=ix
 
-# Decimal representation in host byte order
-INTERNAL_IP=36350144
-EXTERNAL_IP=2197821368
+INTERNAL_IP=192.168.42.2
+EXTERNAL_IP=184.23.0.131
+
+# Converted to decimal representation, x86 host byte order
+EXTERNAL_IP=$(perl -le 'print unpack N, pack CCCC, reverse split /\./, shift' $EXTERNAL_IP)
+INTERNAL_IP=$(perl -le 'print unpack N, pack CCCC, reverse split /\./, shift' $INTERNAL_IP)
+
 
 ###
 
