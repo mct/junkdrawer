@@ -49,6 +49,7 @@ sub runq {
 
     while (my $file = <$opt_d/[1-9][0-9][0-9]*>) {
         my ($links_before, $links_after);
+        undef $fd;
 
         if ($opt_m && $num++ >= $opt_m) {
             verbose "Reached maximum of $num entries\n";
@@ -92,7 +93,7 @@ sub runq {
     }
 
     continue {
-        close $fd;
+        close $fd if (defined $fd);
     }
 }
 

@@ -14,7 +14,7 @@ use warnings;
 our ($opt_d, $opt_l, $opt_v);
 getopts "vld:" or exit 1;
 
-die "Usage: [-v] -d=DIRECTORY [file]\n"
+die "Usage: [-v] [-l] -d=DIRECTORY [file]\n"
     unless $opt_d;
 
 my $host = hostname;
