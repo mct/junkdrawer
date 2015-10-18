@@ -9,6 +9,6 @@ FILE=rfc${RFC}.txt
 URL=http://www.rfc-editor.org/rfc/$FILE
 
 if [ -z "$RFC" ]; then echo "Usage: $0 <rfc number>" >&2; exit -1; fi 
-if [ ! -f "$FILE.gz" ]; then wget $URL; gzip -9 $FILE; fi
+if [ ! -f "$FILE.gz" ]; then wget --prefer-family=IPv4 $URL; gzip -9 $FILE; fi
 
 exec vim $FILE.gz
