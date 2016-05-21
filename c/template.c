@@ -1,4 +1,4 @@
-// vim:set ts=4 sw=4 ai et:
+// vim:set sw=4 ts=4 sts=4 ai et:
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,4 +6,5 @@
 
 int main(int argc, char *argv[])
 {
+    return 0;
 }
