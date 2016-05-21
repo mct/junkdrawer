@@ -1,0 +1,32 @@
+#!/usr/bin/perl
+# vim:set ts=4 sw=4 ai et smarttab:
+
+# Given a list of lines where the first column is a number, prints the line
+# prefixed with the delta from the previous line.  -mct, December 4, 2014
+
+use strict;
+use warnings;
+
+my ($last, $delta);
+
+while (my $line = <>) {
+    my $dup = $line;
+    $dup =~ s/^\s+//;
+    my @F = split /\s+/, $dup;
+
+    unless (@F and $F[0] =~ /^[\d\.\-]+$/) {
+        print "     ", $line;
+        next;
+    }
+
+    if (defined $last) {
+        $delta = $F[0] - $last;
+    }
+    else {
+        $delta = 0;
+    }
+
+    printf "%10.5f  %s", $delta, $line;
+    #print "$delta\t$line";
+    $last = $F[0];
+}
