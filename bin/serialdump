@@ -1,0 +1,41 @@
+#!/usr/bin/python
+# vi:set ai sw=4 ts=4 et smarttab:
+
+import serial
+import sys
+import os
+
+def loop(device, baud):
+    #ser = serial.Serial()
+    #ser.port = device
+    #ser.baud = 19200
+    #ser.timeout = 1
+    #ser.parity = serial.PARITY_NONE
+    #ser.open()
+    #ser.flushInput()
+
+    ser = serial.Serial(device, baudrate=baud, timeout=0.1)
+
+    nl = True
+
+    while True:
+        c = ser.read(1)
+        if not c:
+            if not nl:
+                print
+            nl = True
+            continue
+        print repr(c),
+        nl = False
+
+if __name__ == "__main__":
+
+    if len(sys.argv) != 3:
+        print "Usage: %s <tty> <baud>" % sys.argv[0]
+        sys.exit()
+
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+
+    device = sys.argv[1]
+    baud = int(sys.argv[2])
+    loop(device, baud)
