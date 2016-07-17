@@ -12,6 +12,9 @@ FLAGS="--quit-if-one-screen"
 
 for i in $(echo $PATH | tr : ' ')
 do
+    # Force tilde expansion.  Run through sed to remove metacharacters.
+    i=$(eval echo $(echo $i | sed 's/^[a-zA-Z0-9.-]//g'))
+
     if test $DIR != $i
     then
         if test -z "$NEWPATH"
