@@ -28,7 +28,7 @@ $sts_version = "2011-06-15";
 $pa_version  = "2009-01-06";
 $r53_version = "2012-02-29";
 $ebn_version = "2010-12-01";
-$cfn_version = "2010-05-15";
+$cloudformation_version = "2010-05-15";
 $rds_version = "2013-09-09";
 
 use Digest::SHA qw(hmac_sha1_base64 sha256_hex hmac_sha256 hmac_sha256_hex hmac_sha256_base64);
@@ -55,6 +55,7 @@ use MIME::Base64 qw(encode_base64);
     ["ec2", "add-group addgrp", CreateSecurityGroup, [
 	 ["", GroupName],
 	 ["d", GroupDescription],
+	 ["vpc c", VpcId],
      ]],
     ["ec2", "add-keypair addkey", CreateKeyPair, [["", KeyName]]],
     ["ec2", "add-placement-group", CreatePlacementGroup, [
@@ -87,6 +88,7 @@ use MIME::Base64 qw(encode_base64);
 	 #["t", icmp type code],
 	 ["source-group-user u" => "IpPermissions.1.Groups.N.UserId"],
 	 ["source-group o" => "IpPermissions.1.Groups.N.GroupName"],
+	 ["source-group-id oi" => "IpPermissions.1.Groups.N.GroupId"],
 	 ["s" => "IpPermissions.1.IpRanges.N.CidrIp"],
      ]],
     ["ec2", "cancel-spot-instance-requests cancel csir", CancelSpotInstanceRequests, [
@@ -276,6 +278,7 @@ use MIME::Base64 qw(encode_base64);
 	 #["t", icmp type code],
 	 ["source-group-user u" => "IpPermissions.1.Groups.N.UserId"],
 	 ["source-group o" => "IpPermissions.1.Groups.N.GroupName"],
+	 ["source-group-id oi" => "IpPermissions.1.Groups.N.GroupId"],
 	 ["s" => "IpPermissions.1.IpRanges.N.CidrIp"],
      ]],
     ["ec2", "run-instances run-instance run", RunInstances, [
@@ -286,6 +289,7 @@ use MIME::Base64 qw(encode_base64);
 	      [MinCount => $min, MaxCount => $max];
 	  }],
 	 ["group g", SecurityGroupN],
+	 ["group-id gi", SecurityGroupIdN],
 	 ["key k", KeyName],
 	 ["user-data d", UserData, undef, sub {encode_base64($_[0], "")}],
 	 ["user-data-file f", UserData, undef, sub {encode_base64(load_file($_[0]))}],
@@ -374,7 +378,7 @@ use MIME::Base64 qw(encode_base64);
      ["preferred-maintenance-window w", PreferredMaintenanceWindow],
      ["vpc-security-group-ids sg", "VpcSecurityGroupIds.memberN"]
     ]],
-      
+
     # http://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DeleteDBInstance.html
     # http://docs.aws.amazon.com/AmazonRDS/latest/CommandLineReference/CLIReference-cmd-DeleteDBInstance.html
     ["rds", "delete-db-instance deldb", DeleteDBInstance, [
@@ -382,7 +386,7 @@ use MIME::Base64 qw(encode_base64);
      ["final-db-snapshot-identifier final", FinalDBSnapshotIdentifier],
      ["skip-final-snapshot s", SkipFinalSnapshot]
     ]],
-      
+
     # http://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_AddTagsToResource.html
     ["rds", "add-tags-to-resource cdbtags", AddTagsToResource, [
      ["", ResourceName],
@@ -396,9 +400,9 @@ use MIME::Base64 qw(encode_base64);
      ["marker", Marker],
      ["max-records m", MaxRecords]
     ]],
-    
+
     ### Database Snapshots and Point-In-Time Recovery ###
-    
+
     # http://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_CreateDBSnapshot.html
     # http://docs.aws.amazon.com/AmazonRDS/latest/CommandLineReference/CLIReference-cmd-CreateDBSnapshot.html
     ["rds", "create-db-snapshot cdbsnap", CreateDBSnapshot, [
@@ -406,7 +410,7 @@ use MIME::Base64 qw(encode_base64);
      ["db-snapshot-identifier s snapshot", DBSnapshotIdentifier],
      ["tag", undef, undef, \&parse_tags_member]
     ]],
- 
+
     # http://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DescribeDBSnapshots.html
     # http://docs.aws.amazon.com/AmazonRDS/latest/CommandLineReference/CLIReference-cmd-DescribeDBSnapshots.html
     ["rds", "describe-db-snapshots ddbsnap", DescribeDBSnapshots, [
@@ -416,7 +420,7 @@ use MIME::Base64 qw(encode_base64);
      ["max-records m", MaxRecords],
      ["snapshot-type t", SnapshotType]
     ]],
- 
+
     # http://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_CopyDBSnapshot.html
     # http://docs.aws.amazon.com/AmazonRDS/latest/CommandLineReference/CLIReference-cmd-CopyDBSnapshot.html
     ["rds", "copy-db-snapshot cpdbsnap", CopyDBSnapshot, [
@@ -424,7 +428,7 @@ use MIME::Base64 qw(encode_base64);
      ["target-db-snapshot-identifier t", TargetDBSnapshotIdentifier],
      ["tag", undef, undef, \&parse_tags_member]
     ]],
-    
+
     # http://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_RestoreDBInstanceFromDBSnapshot.html
     # http://docs.aws.amazon.com/AmazonRDS/latest/CommandLineReference/CLIReference-cmd-RestoreDBInstanceFromDBSnapshot.html
     ["rds", "restore-db-instance-from-db-snapshot rdb", RestoreDBInstanceFromDBSnapshot, [
@@ -444,7 +448,7 @@ use MIME::Base64 qw(encode_base64);
      ["publicly-accessible pub", PubliclyAccessible],
      ["tag", undef, undef, \&parse_tags_member]
     ]],
-    
+
     # http://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DeleteDBSnapshot.html
     # http://docs.aws.amazon.com/AmazonRDS/latest/CommandLineReference/CLIReference-cmd-DeleteDBSnapshot.html
     ["rds", "delete-db-snapshot deldbsnap", DeleteDBSnapshot, [
@@ -470,7 +474,7 @@ use MIME::Base64 qw(encode_base64);
      ["marker m", Marker],
      ["max-records x", MaxRecords]
     ]],
-     
+
     ###########################
     ###  Elastic BeaNstalk  ###
     ###########################
@@ -920,15 +924,15 @@ use MIME::Base64 qw(encode_base64);
 	 ["maxitems i" => "MaxItems"],
      ]],
 
-    ["cfn", "describestacks", DescribeStacks,[
+    ["cloudformation", "describestacks", DescribeStacks,[
          ["" => StackName],
      ]],
-    ["cfn", "describestackresources", DescribeStackResources,[
+    ["cloudformation", "describestackresources", DescribeStackResources,[
          ["" => StackName],
          ["l" => LogicalResourceId],
          ["p" => PhysicalResourceId],
      ]],
-    ["cfn", "describestackresource", DescribeStackResource,[
+    ["cloudformation", "describestackresource", DescribeStackResource,[
          ["" => StackName],
          ["l" => LogicalResourceId],
      ]],
@@ -1108,13 +1112,13 @@ unshift @ARGV, $1 if $0 =~ /^(?:.*[\\\/])?(?:(?:ec2|pa|s3|sqs|sdb|rds)-?)?(.+?)(
     # --foo=bar, then slurp up the next item as the value.  Thus, for example,
     #  --region=eu  and  --region eu  both work, with or without the =.
     my(%need_arg, $key_for_arg);
-    @needs_arg{qw(region)} = undef;
+    @needs_arg{qw(metadata region)} = undef;
 
     my(%meta);
     @meta{qw(1 assume AWS4 batch cmd0 content_length content_type credential_helper curl curl_options cut d default_curl_cipher delimiter dns_alias dump_xml
              exec expire_time fail h help http insecure insecure_signing insecure_aws insecureaws install json l limit_rate link max_keys
-	     max_time marker md5 no_vhost netrc_machine parts prefix private progress public queue r region request requester retry role ruby quiet
-	     s3host sanity_check secrets_file set_acl sha1 silent simple sts_host t v verbose vv vvv wait xml yaml)} = undef;
+	     max_time marker md5 metadata no_vhost netrc_machine parts prefix private progress public queue r region request requester retry role ruby quiet
+	     s3host sanity_check no_sanity_check secrets_file set_acl sha1 silent simple sts_host t v verbose vv vvv wait xml yaml)} = undef;
 
     my @awsrc = "";
     for (split(/(?:\#.*?(?=\n)|'(.*?)'|"((?:\\[\\\"]|.)*?)"|((?:\\.|\$.|[^\s\'\"\#])+))/s, load_file_silent("$home/.awsrc")))
@@ -1160,7 +1164,7 @@ unshift @ARGV, $1 if $0 =~ /^(?:.*[\\\/])?(?:(?:ec2|pa|s3|sqs|sdb|rds)-?)?(.+?)(
 	elsif (/^-(\w+)$/)
 	{
 	    if (exists $keyword{$1}
-                || $_ eq "-1" && $cmd =~ /^auth(?:orize)?$/ && $argv[-1] =~ /^-(?:protocol|P|p)$/ # force -1 to be a protocol (or P) or port (p) parameter rather than set $d1
+                || $_ eq "-1" && $cmd =~ /^(auth(?:orize)?)|(revoke)$/ && $argv[-1] =~ /^-(?:protocol|P|p)$/ # force -1 to be a protocol (or P) or port (p) parameter rather than set $d1
                 )
 	    {
 		push @argv, $_;
@@ -1238,7 +1242,7 @@ END {close STDOUT}
 $s3host ||= $ENV{S3_URL} || ($region =~ /-gov-/? "s3-$region.amazonaws.com": "s3.amazonaws.com");
 $sts_host ||= $ENV{STS_URL} || ($s3host =~ /^s3-(.*?)\.amazonaws\.com$/? "sts.$1.amazonaws.com": "sts.amazonaws.com");
 
-print STDERR "aws versions: (ec2: $ec2_version, sqs: $sqs_version, elb: $elb_version, sdb: $sdb_version, iam: $iam_version, ebn: $ebn_version, cfn: $cfn_version, rds: $rds_version)\n" if $v;
+print STDERR "aws versions: (ec2: $ec2_version, sqs: $sqs_version, elb: $elb_version, sdb: $sdb_version, iam: $iam_version, ebn: $ebn_version, cloudformation: $cloudformation_version, rds: $rds_version)\n" if $v;
 
 $insecsign = "--insecure" if $insecure || $insecure_signing;
 $insecureaws = "--insecure" if $insecureaws || $insecure_aws;
@@ -1470,7 +1474,7 @@ for ([m => 60], [h => 60 * 60], [d => 24 * 60 * 60], [w => 7 * 24 * 60 * 60], [m
 
 # run a sanity check if $home/.awsrc doesn't exists, or if it was requested
 
-if (!-e "$home/.awsrc" || $sanity_check)
+if ( !$no_sanity_check && (!-e "$home/.awsrc" || $sanity_check))
 {
     if (!$silent)
     {
@@ -1669,7 +1673,7 @@ if (!$cmd_data)
 	    $output .= "\t\t$one\n";
 	}
     }
-    $output .= "aws versions: (ec2 $ec2_version, sqs $sqs_version, elb $elb_version, sdb $sdb_version, ebn $ebn_version, cfn $cfn_version, rds: $rds_version)\n";
+    $output .= "aws versions: (ec2 $ec2_version, sqs $sqs_version, elb $elb_version, sdb $sdb_version, ebn $ebn_version, cloudformation $cloudformation_version, rds: $rds_version)\n";
     $output .= "Documentation: Search in Google for 'aws <service>-<cmd> cli' e.g. 'aws rds-restore-db-instance-from-db-snapshot cli'\n";
     $output .= "\tThe link with 'rds-' on the front will list all the parameter shortcuts\n";
     die $output;
@@ -1720,7 +1724,7 @@ if (!$cmd_data)
     {
        if ($action eq "XMLVERSION")
        {
-          my $versions = { "ec2" => $ec2_version, "sqs" => $sqs_version, "elb" => $elb_version, "sdb" => $sdb_version, "iam" => $iam_version, "ebn" => $ebn_version, "cfn" => $cfn_version, "rds" => $rds_version };
+          my $versions = { "ec2" => $ec2_version, "sqs" => $sqs_version, "elb" => $elb_version, "sdb" => $sdb_version, "iam" => $iam_version, "ebn" => $ebn_version, "cloudformation" => $cloudformation_version, "rds" => $rds_version };
           if ($#ARGV > 0)
           {
                print "$versions->{$argv[0]}\n";
@@ -1734,7 +1738,7 @@ if (!$cmd_data)
           }
        }
     }
-    elsif ($service eq "ec2" || $service eq "sqs" || $service eq "elb" || $service eq "sdb" || $service eq "iam" || $service eq "pa" || $service eq "ebn" || $service eq "cfn"  || $service eq "rds")
+    elsif ($service eq "ec2" || $service eq "sqs" || $service eq "elb" || $service eq "sdb" || $service eq "iam" || $service eq "pa" || $service eq "ebn" || $service eq "cloudformation"  || $service eq "rds")
     {
 	#print STDERR "(@{[join(', ', @argv)]})\n" if $v;
 
@@ -1850,6 +1854,13 @@ if (!$cmd_data)
 		push @file, $_;
 	    }
 	}
+
+        if ($metadata) {
+            for (split(/,/, $metadata)) {
+                my($key, $val) = split(/=/, $_, 2);
+                push @head, "$key: $val";
+            }
+        }
 
 	my $bucket = shift @file;
 
@@ -2353,20 +2364,20 @@ if (!$cmd_data)
 	#		<RequestId>2f1b87fa-12ed-11e4-be67-5b99b2d10c58</RequestId>
 	#	</ResponseMetadata>
 	#</CreateDBSnapshotResponse>
-	
+
 	for (;;)
 	{
 	    my($instanceId) = $result =~ /<DBInstanceIdentifier>(.*?)<\/DBInstanceIdentifier>/s;
 	    my($snapshotId) = $result =~ /<DBSnapshotIdentifier>(.*?)<\/DBSnapshotIdentifier>/s;
 	    my($progress) = $result =~ /<PercentProgress>(.*?)<\/PercentProgress>/s;
 	    my($status) = $result =~ /<Status>(.*?)<\/Status>/s;
-	    
+
 	    my($pending) += $status eq "creating" || $status eq "deleting";
-	    
+
 	    print "$instanceId\t$snapshotId\t$status\t$progress\n";
-    
+
 	    last unless $wait && $pending;
-    
+
 	    sleep $wait;
 	    $result = qx[$0 --cmd0 --xml --region=$region describe-db-snapshots -s $snapshotId];
 	}
@@ -2382,17 +2393,17 @@ if (!$cmd_data)
 	    my($zone) = $result =~ /<AvailabilityZone>(.*?)<\/AvailabilityZone>/s;	# Zone is not available for RestoreDBInstanceFromDBSnapshotResponse
 	    my($engine) = $result =~ /<Engine>(.*?)<\/Engine>/s;
 	    my($status) = $result =~ /<DBInstanceStatus>(.*?)<\/DBInstanceStatus>/s;
-	    
+
 	    my($pending) += $status ne "available";
-	    
+
 	    print "$instanceId\t$engine\t$status\t$zone\n";
-    
+
 	    last unless $wait && $pending;
-    
+
 	    sleep $wait;
 	    $result = qx[$0 --cmd0 --xml --region=$region describe-db-instances $instanceId];
 	}
-    }     
+    }
     elsif ($result =~ /<ListQueuesResult/)
     {
 	if ($simple)
@@ -2553,7 +2564,7 @@ if (!$cmd_data)
 	{
 	    $ExitCode = 1;
 	}
-	
+
 	print xml2tab($result) || xmlpp($result);
     }
 
@@ -2890,7 +2901,8 @@ sub xml2yaml {
 
     $rubySymbol = ":" if $ruby;
 
-    $result =~ s#\n# #g;
+  $result =~ s#> +#>#g;                             # remove trailing spaces after >
+  $result =~ s#\n# #g;                              # replace all \n by a single space
 	$result =~ s#> #>\n#g;                            # remove all '\n's
 	$result =~ s#</.*>##g;                            # remove closing tags
 	$result =~ s#<([a-z0-9:]*).*>#$rubySymbol\1: #gi; # opening tags -> symbols
@@ -3395,7 +3407,7 @@ sub ec2
     $version .= $sdb_version if $service eq "sdb";
     $version .= $iam_version if $service eq "iam";
     $version .= $ebn_version if $service eq "ebn";
-    $version .= $cfn_version if $service eq "cfn";
+    $version .= $cloudformation_version if $service eq "cloudformation";
     $version .= $rds_version if $service eq "rds";
 
     # see http://developer.amazonwebservices.com/connect/entry!default.jspa?externalID=3912
@@ -3439,7 +3451,7 @@ sub ec2
 	$endpoint = "elasticbeanstalk.$region.amazonaws.com" if $region;
     }
 
-    if ( $service eq "cfn")
+    if ( $service eq "cloudformation")
     {
         $endpoint = "cloudformation.us-east-1.amazonaws.com";
         $endpoint = "cloudformation.$region.amazonaws.com" if $region;
@@ -3450,9 +3462,9 @@ sub ec2
         $endpoint = "rds.us-east-1.amazonaws.com";
         $endpoint = "rds.$region.amazonaws.com" if $region;
     }
-    
+
     my @session = (SecurityToken => $session) if $session;
-    my %data = (AWSAccessKeyId => $awskey, @session, SignatureMethod => ($sha1? HmacSHA1: HmacSHA256), SignatureVersion => 2, Version => $version, ($expire_time? Expires: Timestamp) => $zulu, @_);
+    my %data = (AWSAccessKeyId => $awskey, @session, SignatureMethod => ($sha1? HmacSHA1: HmacSHA256), SignatureVersion => $AWS4? 4: 2, Version => $version, ($expire_time? Expires: Timestamp) => $zulu, @_);
 
     $queue ||= "/";
 
@@ -3469,8 +3481,14 @@ sub ec2
 	$url .= "$_=@{[encode_url_slash($data{$_})]}";
     }
 
-    my $sig = sign("GET\n$endpoint\n$queue\n$url", $data{SignatureMethod});
-    $url = "$scheme://$endpoint$queue?Signature=@{[encode_url($sig)]}&$url";
+
+    if ($AWS4) {
+        $url = signAWS4($service, GET, "$scheme://$endpoint$queue?$url", $expire_time);
+    } else {
+        my $sig = sign("GET\n$endpoint\n$queue\n$url", $data{SignatureMethod});
+        $url = "$scheme://$endpoint$queue?Signature=@{[encode_url($sig)]}&$url";
+    }
+
     return $url if $request;
     local($/);			# return a string regardless of wantarray
     print "$url\n" if $v >= 2;
@@ -3627,6 +3645,12 @@ sub signAWS4
     my $SignedHeaders = join(";", sort map {/^(.+?):/; $1} @$headers);
 
     my $HashedPayload = "UNSIGNED-PAYLOAD";
+    if ($service ne "s3") {
+        # S3 and the other services do not agree on this parameter.
+        # For UNSIGNED-PAYLOAD, see http://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html.
+        # It doesn't work for EC2.
+        $HashedPayload = sha256_hex("")
+    };
 
     my $creq = join("\n", $verb, $CanonicalURI, $CanonicalQs, $CanonicalHeaders, $SignedHeaders, $HashedPayload);
     my $creq_hash = sha256_hex($creq);
