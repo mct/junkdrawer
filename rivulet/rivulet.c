@@ -19,11 +19,7 @@
  */
 
 #include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
 #include <stdint.h>
-#include <string.h>
-#include <ctype.h>
 
 #include "rivulet.h"
 
@@ -88,18 +84,18 @@ u8 rivulet_read_u8(struct rivulet *r)
 u16 rivulet_read_u16(struct rivulet *r)
 {
     u16 ret = 0;
-    ret |= rivulet_read_u8(r) << 8;
-    ret |= rivulet_read_u8(r) << 0;
+    ret |= (u16) rivulet_read_u8(r) << 8;
+    ret |= (u16) rivulet_read_u8(r) << 0;
     return ret;
 }
 
 u32 rivulet_read_u32(struct rivulet *r)
 {
     u32 ret = 0;
-    ret |= rivulet_read_u8(r) << 24;
-    ret |= rivulet_read_u8(r) << 16;
-    ret |= rivulet_read_u8(r) <<  8;
-    ret |= rivulet_read_u8(r) <<  0;
+    ret |= (u32) rivulet_read_u8(r) << 24;
+    ret |= (u32) rivulet_read_u8(r) << 16;
+    ret |= (u32) rivulet_read_u8(r) <<  8;
+    ret |= (u32) rivulet_read_u8(r) <<  0;
     return ret;
 }
 
@@ -200,17 +196,17 @@ u8 rivulet_pop_u8(struct rivulet *r)
 u16 rivulet_pop_u16(struct rivulet *r)
 {
     u16 ret = 0;
-    ret |= rivulet_pop_u8(r) << 8;
-    ret |= rivulet_pop_u8(r) << 0;
+    ret |= (u16) rivulet_pop_u8(r) << 8;
+    ret |= (u16) rivulet_pop_u8(r) << 0;
     return ret;
 }
 
 u32 rivulet_pop_u32(struct rivulet *r)
 {
     u32 ret = 0;
-    ret |= rivulet_pop_u8(r) << 24;
-    ret |= rivulet_pop_u8(r) << 16;
-    ret |= rivulet_pop_u8(r) <<  8;
-    ret |= rivulet_pop_u8(r) <<  0;
+    ret |= (u32) rivulet_pop_u8(r) << 24;
+    ret |= (u32) rivulet_pop_u8(r) << 16;
+    ret |= (u32) rivulet_pop_u8(r) <<  8;
+    ret |= (u32) rivulet_pop_u8(r) <<  0;
     return ret;
 }
