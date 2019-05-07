@@ -1,0 +1,7 @@
+#!/bin/bash
+
+date -d "now $*"
+
+#for i in date -d "now $*"
+#do echo "<$i>"
+#done
