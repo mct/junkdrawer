@@ -107,4 +107,4 @@ then
 	exit -1
 fi
 
-gunzip -c < $FILE | grep -i -B1 -A20 -- "^  *$PAT" | awk '/^[ \t]*$/ {exit} {print}'
+gunzip -c < $FILE | grep -i -B1 -A20 -- "^ *$PAT" | awk '/^[ \t\r]*$/ {exit} {print}'
