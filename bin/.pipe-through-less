@@ -24,9 +24,7 @@ do
     fi
 done
 
-if test "$BASE" = "colordiff" || test "$BASE" = "unicode"
-then FLAGS="$FLAGS -R"
-fi
+FLAGS="$FLAGS -R"
 
 PATH=$NEWPATH
 exec $BASE "$@" | less $FLAGS
