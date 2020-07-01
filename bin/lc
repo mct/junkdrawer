@@ -1,2 +1,3 @@
-#!/bin/bash
-exec tr A-Z a-z
+#!/usr/bin/env perl -n
+
+print lc

@@ -1,2 +1,3 @@
-#!/bin/bash
-exec tr a-z A-Z
+#!/usr/bin/env perl -n
+
+print uc
