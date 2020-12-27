@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+# From https://blog.plover.com/prog/accumulate.html
+
 #   cat <<EOF | ./accumulate
 #   > foo 1
 #   > bar 2
