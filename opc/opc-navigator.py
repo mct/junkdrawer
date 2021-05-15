@@ -78,9 +78,9 @@ class Box:
         stdscr.addstr(line, col, ll + h*4 + lr, attr)
 
 class Screen:
-    def __init__(self, stdscr, args, opc_client):
+    def __init__(self, stdscr, args, opc_clients):
         self.stdscr = stdscr
-        self.opc = opc_client
+        self.opc = opc_clients
         self.kerning = args.kerning
         self.red_pwm = args.red
         self.green_pwm = args.green
@@ -88,11 +88,11 @@ class Screen:
         self.num_leds = args.number_leds
 
         self.assign_color_index = 0
-        self.red   = self.assign_color(curses.COLOR_BLACK, curses.COLOR_RED)
-        self.green = self.assign_color(curses.COLOR_BLACK, curses.COLOR_GREEN)
-        self.blue  = self.assign_color(curses.COLOR_BLACK, curses.COLOR_BLUE)
-        self.white = self.assign_color(curses.COLOR_BLACK, curses.COLOR_WHITE)
-        self.off   = self.assign_color(curses.COLOR_WHITE, curses.COLOR_BLACK)
+        self.red         = self.assign_color(curses.COLOR_BLACK, curses.COLOR_RED)
+        self.green       = self.assign_color(curses.COLOR_BLACK, curses.COLOR_GREEN)
+        self.blue        = self.assign_color(curses.COLOR_BLACK, curses.COLOR_BLUE)
+        self.white       = self.assign_color(curses.COLOR_BLACK, curses.COLOR_WHITE)
+        self.off         = self.assign_color(curses.COLOR_WHITE, curses.COLOR_BLACK)
         self.status_text = self.assign_color(curses.COLOR_WHITE, curses.COLOR_BLUE, curses.A_BOLD)
         self.error_text  = self.assign_color(curses.COLOR_WHITE, curses.COLOR_RED, curses.A_BOLD)
 
@@ -132,21 +132,19 @@ class Screen:
             self.set_led(self.box_color)
 
     def update_opc(self):
-        if not self.opc:
-            return
-
-        out = []
+        pixels = []
         for i in self.leds:
-            if   i == self.off:   out.append((0, 0, 0))
-            elif i == self.red:   out.append((self.red_pwm, 0, 0))
-            elif i == self.green: out.append((0, self.green_pwm, 0))
-            elif i == self.blue:  out.append((0, 0, self.blue_pwm))
-            elif i == self.white: out.append((self.red_pwm, self.green_pwm, self.blue_pwm))
+            if   i == self.off:   pixels.append((0, 0, 0))
+            elif i == self.red:   pixels.append((self.red_pwm, 0, 0))
+            elif i == self.green: pixels.append((0, self.green_pwm, 0))
+            elif i == self.blue:  pixels.append((0, 0, self.blue_pwm))
+            elif i == self.white: pixels.append((self.red_pwm, self.green_pwm, self.blue_pwm))
             else:
                 raise("Internal error: Unknown color?")
 
-        if not self.opc.put_pixels(out, channel=0):
-            raise("OPC: Not connected?")
+        for client in self.opc:
+            if not client.put_pixels(pixels, channel=0):
+                raise(f"OPC: {client}: Not connected")
 
     def quit(self):
         self.stdscr.clear()
@@ -287,12 +285,21 @@ if __name__ == '__main__':
     args.green = constrain(args.green, 0, args.dim)
     args.blue  = constrain(args.blue,  0, args.dim)
 
-    if args.dry_run:
-        client = None
-    else:
-        client = opc.Client(args.server)
-        if not client.can_connect():
-            print('Could not connect to', args.server)
-            exit(1)
+    clients = []
 
-    curses.wrapper(Screen, args, client)
+    if not args.dry_run:
+        # Support a comma-separated list of OPC servers.  Useful if you have,
+        # say, a real sculpture you want to drive, along with a simulator that
+        # you want to compare the output to.
+        for server in args.server.split(','):
+            # If no port is specified, add the default OPC port
+            if ':' not in server:
+                server += ':7890'
+
+            c = opc.Client(server)
+            if not c.can_connect():
+                print('Could not connect to', server)
+                exit(1)
+            clients.append(c)
+
+    curses.wrapper(Screen, args, clients)
